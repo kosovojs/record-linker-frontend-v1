@@ -49,3 +49,12 @@ export function assertUuid(value: string, fieldName = 'uuid'): void {
     throw new Error(`Invalid UUID format for ${fieldName}: ${value}`)
   }
 }
+
+// User schema (for future auth)
+export const UserSchema = z.object({
+  uuid: z.string().uuid(),
+  email: z.string().email(),
+  name: z.string(),
+})
+
+export type User = z.infer<typeof UserSchema>

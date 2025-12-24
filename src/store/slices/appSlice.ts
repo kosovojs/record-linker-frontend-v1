@@ -1,10 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import type { User } from '@/services/api/schemas'
 
-interface User {
-  uuid: string
-  email: string
-  name: string
-}
 
 export interface AppState {
   // Auth placeholder for future

@@ -1,5 +1,4 @@
-import { useState, useCallback } from 'react'
-import Papa from 'papaparse'
+import { useState, useCallback, useRef } from 'react'
 import { Upload, Check, AlertCircle, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,8 +18,15 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { useImportEntries } from '../hooks'
-import type { DatasetEntryCreate } from '@/services/api/schemas'
+import { Progress } from '@/components/ui/progress'
+import { useCsvParser, useImportEntries } from '../hooks'
+import {
+  ENTRY_FIELD_OPTIONS,
+  autoDetectColumnMappings,
+  isMappingValid,
+  transformRowsToEntries,
+  type EntryData,
+} from '../utils'
 
 interface EntryImportWizardProps {
   datasetUuid: string
@@ -29,66 +35,41 @@ interface EntryImportWizardProps {
 
 type Step = 'upload' | 'mapping' | 'validation' | 'importing' | 'complete'
 
-
-
-interface ParsedData {
-  headers: string[]
-  rows: Record<string, unknown>[]
-}
-
-const FIELD_OPTIONS = [
-  { value: 'external_id', label: 'External ID (required)', required: true },
-  { value: 'display_name', label: 'Display Name' },
-  { value: 'external_url', label: 'External URL' },
-  { value: 'skip', label: '— Skip this column —' },
-]
+// Configurable batch size - can be adjusted based on payload size
+const IMPORT_BATCH_SIZE = 500
+const CONCURRENT_BATCHES = 3 // Number of parallel batch requests
 
 export function EntryImportWizard({ datasetUuid, onComplete }: EntryImportWizardProps) {
   const [step, setStep] = useState<Step>('upload')
   const [file, setFile] = useState<File | null>(null)
-  const [parsedData, setParsedData] = useState<ParsedData | null>(null)
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({})
-  const [validEntries, setValidEntries] = useState<DatasetEntryCreate[]>([])
+  const [validEntries, setValidEntries] = useState<EntryData[]>([])
   const [invalidCount, setInvalidCount] = useState(0)
   const [importResult, setImportResult] = useState<{ created: number } | null>(null)
+  const [importProgress, setImportProgress] = useState(0)
+
+  const allRowsRef = useRef<Record<string, unknown>[]>([])
+
+  const csvParser = useCsvParser({
+    maxPreviewRows: 1000,
+    onComplete: (rows) => {
+      allRowsRef.current = rows
+    },
+  })
 
   const importMutation = useImportEntries()
 
-  const handleFileSelect = useCallback((selectedFile: File) => {
+  const handleFileSelect = useCallback(async (selectedFile: File) => {
     setFile(selectedFile)
+    const result = await csvParser.parseFile(selectedFile)
 
-    Papa.parse<Record<string, unknown>>(selectedFile, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const headers = results.meta.fields || []
-        setParsedData({
-          headers,
-          rows: results.data,
-        })
-
-        // Auto-detect column mappings
-        const autoMapping: Record<string, string> = {}
-        headers.forEach((header) => {
-          const lowerHeader = header.toLowerCase()
-          if (lowerHeader.includes('external_id') || lowerHeader === 'id') {
-            autoMapping[header] = 'external_id'
-          } else if (lowerHeader.includes('name') || lowerHeader.includes('title')) {
-            autoMapping[header] = 'display_name'
-          } else if (lowerHeader.includes('url') || lowerHeader.includes('link')) {
-            autoMapping[header] = 'external_url'
-          } else {
-            autoMapping[header] = 'skip'
-          }
-        })
-        setColumnMapping(autoMapping)
-        setStep('mapping')
-      },
-      error: (error) => {
-        console.error('CSV parsing error:', error)
-      },
-    })
-  }, [])
+    if (result) {
+      // Auto-detect column mappings
+      const autoMapping = autoDetectColumnMappings(result.headers)
+      setColumnMapping(autoMapping)
+      setStep('mapping')
+    }
+  }, [csvParser])
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -101,71 +82,49 @@ export function EntryImportWizard({ datasetUuid, onComplete }: EntryImportWizard
     [handleFileSelect]
   )
 
-  const handleValidate = () => {
-    if (!parsedData) return
-
-    const externalIdColumn = Object.entries(columnMapping).find(
-      ([, value]) => value === 'external_id'
-    )?.[0]
-
-    if (!externalIdColumn) {
-      return
-    }
-
-    const displayNameColumn = Object.entries(columnMapping).find(
-      ([, value]) => value === 'display_name'
-    )?.[0]
-
-    const externalUrlColumn = Object.entries(columnMapping).find(
-      ([, value]) => value === 'external_url'
-    )?.[0]
-
-    const valid: DatasetEntryCreate[] = []
-    let invalid = 0
-
-    parsedData.rows.forEach((row) => {
-      const externalId = row[externalIdColumn]
-      if (!externalId || typeof externalId !== 'string' || !externalId.trim()) {
-        invalid++
-        return
-      }
-
-      // Collect all columns not mapped to specific fields into raw_data
-      const rawData: Record<string, unknown> = {}
-      Object.entries(row).forEach(([key, value]) => {
-        if (columnMapping[key] === 'skip' || !columnMapping[key]) {
-          rawData[key] = value
-        }
-      })
-
-      valid.push({
-        external_id: externalId.trim(),
-        display_name: displayNameColumn ? String(row[displayNameColumn] || '') || null : null,
-        external_url: externalUrlColumn ? String(row[externalUrlColumn] || '') || null : null,
-        raw_data: Object.keys(rawData).length > 0 ? rawData : null,
-      })
-    })
+  const handleValidate = useCallback(() => {
+    const rows = csvParser.getAllRows()
+    const { valid, invalidCount: invalid } = transformRowsToEntries(rows, columnMapping)
 
     setValidEntries(valid)
     setInvalidCount(invalid)
     setStep('validation')
-  }
+  }, [csvParser, columnMapping])
 
   const handleImport = async () => {
     setStep('importing')
+    setImportProgress(0)
 
     try {
-      // Import in batches of 500
-      const BATCH_SIZE = 500
       let totalCreated = 0
+      const batches: EntryData[][] = []
 
-      for (let i = 0; i < validEntries.length; i += BATCH_SIZE) {
-        const batch = validEntries.slice(i, i + BATCH_SIZE)
-        const result = await importMutation.mutateAsync({
-          datasetUuid,
-          entries: batch,
+      // Split entries into batches
+      for (let i = 0; i < validEntries.length; i += IMPORT_BATCH_SIZE) {
+        batches.push(validEntries.slice(i, i + IMPORT_BATCH_SIZE))
+      }
+
+      // Process batches with concurrency limit
+      let completedBatches = 0
+
+      for (let i = 0; i < batches.length; i += CONCURRENT_BATCHES) {
+        const batchGroup = batches.slice(i, i + CONCURRENT_BATCHES)
+
+        const results = await Promise.all(
+          batchGroup.map((batch) =>
+            importMutation.mutateAsync({
+              datasetUuid,
+              entries: batch,
+            })
+          )
+        )
+
+        results.forEach((result) => {
+          totalCreated += result.created
         })
-        totalCreated += result.created
+
+        completedBatches += batchGroup.length
+        setImportProgress(Math.round((completedBatches / batches.length) * 100))
       }
 
       setImportResult({ created: totalCreated })
@@ -176,17 +135,19 @@ export function EntryImportWizard({ datasetUuid, onComplete }: EntryImportWizard
     }
   }
 
-  const resetWizard = () => {
+  const resetWizard = useCallback(() => {
     setStep('upload')
     setFile(null)
-    setParsedData(null)
     setColumnMapping({})
     setValidEntries([])
     setInvalidCount(0)
     setImportResult(null)
-  }
+    setImportProgress(0)
+    csvParser.reset()
+    allRowsRef.current = []
+  }, [csvParser])
 
-  const isExternalIdMapped = Object.values(columnMapping).includes('external_id')
+  const isExternalIdMapped = isMappingValid(columnMapping)
 
   return (
     <Card>
@@ -215,20 +176,32 @@ export function EntryImportWizard({ datasetUuid, onComplete }: EntryImportWizard
                 if (selectedFile) handleFileSelect(selectedFile)
               }}
             />
-            <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">Drop your CSV file here</h3>
-            <p className="text-sm text-muted-foreground">
-              or click to browse. File should have a header row.
-            </p>
+            {csvParser.isParsing ? (
+              <>
+                <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary mb-4" />
+                <h3 className="text-lg font-medium mb-2">Parsing CSV...</h3>
+                {csvParser.progress > 0 && (
+                  <Progress value={csvParser.progress} className="w-48 mx-auto" />
+                )}
+              </>
+            ) : (
+              <>
+                <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">Drop your CSV file here</h3>
+                <p className="text-sm text-muted-foreground">
+                  or click to browse. File should have a header row.
+                </p>
+              </>
+            )}
           </div>
         )}
 
         {/* Step: Mapping */}
-        {step === 'mapping' && parsedData && (
+        {step === 'mapping' && csvParser.data && (
           <div className="space-y-6">
             <div>
               <h3 className="font-medium mb-2">
-                File: {file?.name} ({parsedData.rows.length} rows)
+                File: {file?.name} ({csvParser.data.totalRows.toLocaleString()} rows)
               </h3>
               <p className="text-sm text-muted-foreground">
                 Map your CSV columns to the entry fields. Unmapped columns will be stored in raw_data.
@@ -236,7 +209,7 @@ export function EntryImportWizard({ datasetUuid, onComplete }: EntryImportWizard
             </div>
 
             <div className="space-y-3">
-              {parsedData.headers.map((header) => (
+              {csvParser.data.headers.map((header) => (
                 <div key={header} className="flex items-center gap-4">
                   <div className="w-1/3 font-mono text-sm truncate" title={header}>
                     {header}
@@ -252,7 +225,7 @@ export function EntryImportWizard({ datasetUuid, onComplete }: EntryImportWizard
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {FIELD_OPTIONS.map((option) => (
+                      {ENTRY_FIELD_OPTIONS.map((option) => (
                         <SelectItem
                           key={option.value}
                           value={option.value}
@@ -300,7 +273,7 @@ export function EntryImportWizard({ datasetUuid, onComplete }: EntryImportWizard
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-2 text-green-600">
                     <Check className="h-5 w-5" />
-                    <span className="text-2xl font-bold">{validEntries.length}</span>
+                    <span className="text-2xl font-bold">{validEntries.length.toLocaleString()}</span>
                   </div>
                   <p className="text-sm text-muted-foreground">Valid entries</p>
                 </CardContent>
@@ -310,7 +283,7 @@ export function EntryImportWizard({ datasetUuid, onComplete }: EntryImportWizard
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-2 text-destructive">
                       <AlertCircle className="h-5 w-5" />
-                      <span className="text-2xl font-bold">{invalidCount}</span>
+                      <span className="text-2xl font-bold">{invalidCount.toLocaleString()}</span>
                     </div>
                     <p className="text-sm text-muted-foreground">Invalid (missing ID)</p>
                   </CardContent>
@@ -362,7 +335,7 @@ export function EntryImportWizard({ datasetUuid, onComplete }: EntryImportWizard
                 Back to Mapping
               </Button>
               <Button onClick={handleImport} disabled={validEntries.length === 0}>
-                Import {validEntries.length} Entries
+                Import {validEntries.length.toLocaleString()} Entries
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </div>
@@ -374,9 +347,11 @@ export function EntryImportWizard({ datasetUuid, onComplete }: EntryImportWizard
           <div className="py-12 text-center">
             <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary mb-4" />
             <h3 className="text-lg font-medium">Importing entries...</h3>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground mt-1 mb-4">
               Please wait while we import your data.
             </p>
+            <Progress value={importProgress} className="w-64 mx-auto" />
+            <p className="text-xs text-muted-foreground mt-2">{importProgress}% complete</p>
           </div>
         )}
 
@@ -388,7 +363,7 @@ export function EntryImportWizard({ datasetUuid, onComplete }: EntryImportWizard
             </div>
             <h3 className="text-lg font-medium">Import Complete!</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Successfully imported {importResult.created} entries.
+              Successfully imported {importResult.created.toLocaleString()} entries.
             </p>
             <div className="flex justify-center gap-4 mt-6">
               <Button variant="outline" onClick={resetWizard}>
