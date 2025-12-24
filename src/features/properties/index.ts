@@ -1,3 +1,15 @@
-// Properties feature - components and hooks will be added in Phase 3
-// Services are now in src/services/properties.service.ts
-export { propertiesService } from '@/services'
+// Pages
+export { PropertiesPage } from './pages'
+
+// Components
+export { PropertyDialog } from './components'
+
+// Hooks
+export {
+  useProperties,
+  useProperty,
+  useCreateProperty,
+  useUpdateProperty,
+  useDeleteProperty,
+  propertyKeys,
+} from './hooks'

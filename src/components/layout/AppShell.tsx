@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react'
+import { Link, useRouterState } from '@tanstack/react-router'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -9,6 +10,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  Home,
 } from 'lucide-react'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { uiSelectors, uiActions } from '@/store/slices'
@@ -16,14 +18,14 @@ import { uiSelectors, uiActions } from '@/store/slices'
 interface NavItem {
   label: string
   icon: ReactNode
-  href: string
-  active?: boolean
+  to: string
 }
 
 const navItems: NavItem[] = [
-  { label: 'Datasets', icon: <Database className="h-4 w-4" />, href: '/datasets' },
-  { label: 'Projects', icon: <FolderKanban className="h-4 w-4" />, href: '/projects' },
-  { label: 'Properties', icon: <Settings className="h-4 w-4" />, href: '/properties' },
+  { label: 'Dashboard', icon: <Home className="h-4 w-4" />, to: '/' },
+  { label: 'Datasets', icon: <Database className="h-4 w-4" />, to: '/datasets' },
+  { label: 'Projects', icon: <FolderKanban className="h-4 w-4" />, to: '/projects' },
+  { label: 'Properties', icon: <Settings className="h-4 w-4" />, to: '/properties' },
 ]
 
 interface AppShellProps {
@@ -33,6 +35,15 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const dispatch = useAppDispatch()
   const collapsed = useAppSelector(uiSelectors.sidebarCollapsed)
+  const routerState = useRouterState()
+  const currentPath = routerState.location.pathname
+
+  const isActive = (to: string) => {
+    if (to === '/') {
+      return currentPath === '/'
+    }
+    return currentPath.startsWith(to)
+  }
 
   return (
     <div className="flex h-screen bg-background">
@@ -56,18 +67,18 @@ export function AppShell({ children }: AppShellProps) {
           <nav className="space-y-1">
             {navItems.map((item) => (
               <Button
-                key={item.href}
-                variant={item.active ? 'secondary' : 'ghost'}
+                key={item.to}
+                variant={isActive(item.to) ? 'secondary' : 'ghost'}
                 className={cn(
                   'w-full justify-start gap-3',
                   collapsed && 'justify-center px-2'
                 )}
                 asChild
               >
-                <a href={item.href}>
+                <Link to={item.to}>
                   {item.icon}
                   {!collapsed && <span>{item.label}</span>}
-                </a>
+                </Link>
               </Button>
             ))}
           </nav>
