@@ -1,15 +1,5 @@
 import { z } from 'zod'
 
-// Common pagination response wrapper
-export const PaginatedResponseSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
-  z.object({
-    items: z.array(itemSchema),
-    total: z.number(),
-    page: z.number(),
-    page_size: z.number(),
-    has_more: z.boolean(),
-  })
-
 // Dataset Source Types
 export const DatasetSourceTypeSchema = z.enum([
   'web_scrape',
@@ -74,10 +64,3 @@ export type DatasetCreate = z.infer<typeof DatasetCreateSchema>
 export type DatasetUpdate = z.infer<typeof DatasetUpdateSchema>
 export type DatasetEntryRead = z.infer<typeof DatasetEntryReadSchema>
 export type DatasetEntryCreate = z.infer<typeof DatasetEntryCreateSchema>
-export type PaginatedResponse<T> = {
-  items: T[]
-  total: number
-  page: number
-  page_size: number
-  has_more: boolean
-}
