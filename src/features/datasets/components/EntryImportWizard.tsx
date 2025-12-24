@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import Papa from 'papaparse'
-import { Upload, FileText, Check, AlertCircle, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react'
+import { Upload, Check, AlertCircle, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -29,11 +29,7 @@ interface EntryImportWizardProps {
 
 type Step = 'upload' | 'mapping' | 'validation' | 'importing' | 'complete'
 
-interface ColumnMapping {
-  external_id: string | null
-  display_name: string | null
-  external_url: string | null
-}
+
 
 interface ParsedData {
   headers: string[]

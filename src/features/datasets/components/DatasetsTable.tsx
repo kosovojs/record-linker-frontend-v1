@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { MoreHorizontal, Trash2, ExternalLink } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import {
   Table,
   TableBody,

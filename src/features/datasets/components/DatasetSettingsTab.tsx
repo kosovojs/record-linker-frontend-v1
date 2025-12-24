@@ -15,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
 import { ConfirmDialog } from '@/components/common'
 import { useUpdateDataset, useDeleteDataset } from '../hooks'
 import type { DatasetRead } from '@/services/api/schemas'
