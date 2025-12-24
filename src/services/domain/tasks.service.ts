@@ -1,6 +1,6 @@
-import { httpClient } from '../api/client'
-import { assertUuid } from '../api/schemas/common'
-import type { TaskRead, PaginatedResponse } from '../api/schemas'
+import { httpClient } from '@/services/api/client'
+import { assertUuid } from '@/services/api/schemas/common'
+import type { TaskRead, PaginatedResponse } from '@/services/api/schemas'
 
 interface ListTasksParams {
   [key: string]: string | number | boolean | undefined | null

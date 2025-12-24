@@ -1,9 +1,9 @@
 // API client and errors
-export { httpClient } from './api/client'
-export { ApiError, NetworkError, ValidationError } from './api/errors'
+export { httpClient } from '@/services/api/client'
+export { ApiError, NetworkError, ValidationError } from '@/services/api/errors'
 
 // All schemas and types
-export * from './api/schemas'
+export * from '@/services/api/schemas'
 
 // Domain services
-export * from './domain'
+export * from '@/services/domain'
