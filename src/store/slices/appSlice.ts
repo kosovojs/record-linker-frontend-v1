@@ -1,10 +1,17 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import type { RootState } from '../index'
+
+interface User {
+  uuid: string
+  email: string
+  name: string
+}
 
 interface AppState {
   // Auth placeholder for future
   isAuthChecked: boolean
   isAuthenticated: boolean
-  user: null | { uuid: string; email: string; name: string }
+  user: User | null
 
   // Global app state
   isLoading: boolean
@@ -33,7 +40,7 @@ export const appSlice = createSlice({
       state.error = null
     },
     // Future auth actions
-    setUser: (state, action: PayloadAction<AppState['user']>) => {
+    setUser: (state, action: PayloadAction<User | null>) => {
       state.user = action.payload
       state.isAuthenticated = !!action.payload
     },
@@ -44,11 +51,14 @@ export const appSlice = createSlice({
   },
 })
 
-export const { setLoading, setError, clearError, setUser, logout } = appSlice.actions
+export const { actions } = appSlice
 
-// Selectors
-export const selectIsAuthChecked = (state: { app: AppState }) => state.app.isAuthChecked
-export const selectIsAuthenticated = (state: { app: AppState }) => state.app.isAuthenticated
-export const selectUser = (state: { app: AppState }) => state.app.user
-export const selectIsLoading = (state: { app: AppState }) => state.app.isLoading
-export const selectError = (state: { app: AppState }) => state.app.error
+export const selectors = {
+  isAuthChecked: (state: RootState) => state.app.isAuthChecked,
+  isAuthenticated: (state: RootState) => state.app.isAuthenticated,
+  user: (state: RootState) => state.app.user,
+  isLoading: (state: RootState) => state.app.isLoading,
+  error: (state: RootState) => state.app.error,
+}
+
+export default appSlice.reducer

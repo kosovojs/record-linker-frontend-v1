@@ -11,7 +11,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
-import { selectSidebarCollapsed, toggleSidebar } from '@/store/slices'
+import { uiSelectors, uiActions } from '@/store/slices'
 
 interface NavItem {
   label: string
@@ -32,7 +32,7 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const dispatch = useAppDispatch()
-  const collapsed = useAppSelector(selectSidebarCollapsed)
+  const collapsed = useAppSelector(uiSelectors.sidebarCollapsed)
 
   return (
     <div className="flex h-screen bg-background">
@@ -81,7 +81,7 @@ export function AppShell({ children }: AppShellProps) {
             variant="ghost"
             size="icon"
             className="w-full"
-            onClick={() => dispatch(toggleSidebar())}
+            onClick={() => dispatch(uiActions.toggleSidebar())}
           >
             {collapsed ? (
               <ChevronRight className="h-4 w-4" />
