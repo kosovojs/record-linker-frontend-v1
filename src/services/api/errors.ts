@@ -2,14 +2,21 @@
  * Custom API Error class for HTTP errors
  */
 export class ApiError extends Error {
+  status: number
+  code?: string
+  data?: unknown
+
   constructor(
     message: string,
-    public status: number,
-    public code?: string,
-    public data?: unknown
+    status: number,
+    code?: string,
+    data?: unknown
   ) {
     super(message)
     this.name = 'ApiError'
+    this.status = status
+    this.code = code
+    this.data = data
   }
 
   isClientError(): boolean {
@@ -33,9 +40,12 @@ export class ApiError extends Error {
  * Network error - thrown when fetch fails entirely
  */
 export class NetworkError extends Error {
-  constructor(message = 'Network request failed', public originalError?: Error) {
+  originalError?: Error
+
+  constructor(message = 'Network request failed', originalError?: Error) {
     super(message)
     this.name = 'NetworkError'
+    this.originalError = originalError
   }
 }
 
@@ -43,11 +53,14 @@ export class NetworkError extends Error {
  * Validation error - thrown when Zod schema validation fails
  */
 export class ValidationError extends Error {
+  errors: Array<{ path: string; message: string }>
+
   constructor(
     message: string,
-    public errors: Array<{ path: string; message: string }>
+    errors: Array<{ path: string; message: string }>
   ) {
     super(message)
     this.name = 'ValidationError'
+    this.errors = errors
   }
 }

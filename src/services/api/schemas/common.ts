@@ -20,11 +20,16 @@ export interface PaginatedResponse<T> {
 }
 
 // Common list params interface
+// Index signature required for compatibility with httpClient params type
 export interface ListParams {
+  [key: string]: string | number | boolean | undefined | null
   page?: number
   page_size?: number
   search?: string
 }
+
+// Type alias for query params (for use in service files)
+export type QueryParams = Record<string, string | number | boolean | undefined | null>
 
 // UUID validation regex
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i

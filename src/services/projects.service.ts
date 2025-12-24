@@ -12,6 +12,7 @@ import type {
 } from './api/schemas'
 
 interface ProjectListParams {
+  [key: string]: string | number | boolean | undefined | null
   page?: number
   page_size?: number
   status?: string
@@ -82,7 +83,7 @@ export const projectsService = {
     assertUuid(uuid, 'project uuid')
     return httpClient.get<ApprovedMatchesResponse>(
       `/projects/${uuid}/approved-matches`,
-      { params }
+      { params: params as Record<string, string | number | boolean | undefined | null> }
     )
   },
 }

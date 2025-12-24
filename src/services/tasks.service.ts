@@ -3,6 +3,7 @@ import { assertUuid } from './api/schemas/common'
 import type { TaskRead, PaginatedResponse } from './api/schemas'
 
 interface ListTasksParams {
+  [key: string]: string | number | boolean | undefined | null
   page?: number
   page_size?: number
   status?: string
