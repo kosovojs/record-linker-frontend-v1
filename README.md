@@ -67,7 +67,7 @@ pnpm build            # Production build
 1. ✅ Implementation plan created
 2. ✅ Phase 1: Project scaffolding (COMPLETE)
 3. ✅ Phase 2: Core infrastructure (COMPLETE)
-4. ⬜ Phase 3: Dataset management
+4. ✅ Phase 3: Dataset management (COMPLETE)
 5. ⬜ Phase 4: Project management
 6. ⬜ Phase 5: Reconciliation Workspace (Addrify-style)
 7. ⬜ Phase 6: Automatches view (Mix'n'Match-style)

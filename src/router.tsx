@@ -5,16 +5,7 @@ import {
   Outlet,
   lazyRouteComponent,
 } from '@tanstack/react-router'
-import { AppShell } from '@/components/layout'
-
-// Root layout with AppShell
-function RootLayout() {
-  return (
-    <AppShell>
-      <Outlet />
-    </AppShell>
-  )
-}
+import { RootLayout } from '@/components/layout/RootLayout'
 
 // Define routes
 const rootRoute = createRootRoute({
