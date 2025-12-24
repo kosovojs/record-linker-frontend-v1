@@ -1,10 +1,10 @@
-import { httpClient } from './api/client'
-import { assertUuid } from './api/schemas/common'
+import { httpClient } from '../api/client'
+import { assertUuid } from '../api/schemas/common'
 import type {
   PropertyDefinitionRead,
   PropertyDefinitionCreate,
   PropertyDefinitionUpdate,
-} from './api/schemas'
+} from '../api/schemas'
 
 /**
  * Properties API service

@@ -1,7 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { RootState } from '../index'
 
-interface UiState {
+export interface UiState {
   sidebarCollapsed: boolean
   theme: 'light' | 'dark' | 'system'
 }
@@ -29,9 +28,10 @@ export const uiSlice = createSlice({
 
 export const { actions } = uiSlice
 
+// Selectors - take the slice state directly, will be composed in index
 export const selectors = {
-  sidebarCollapsed: (state: RootState) => state.ui.sidebarCollapsed,
-  theme: (state: RootState) => state.ui.theme,
+  sidebarCollapsed: (state: { ui: UiState }) => state.ui.sidebarCollapsed,
+  theme: (state: { ui: UiState }) => state.ui.theme,
 }
 
 export default uiSlice.reducer

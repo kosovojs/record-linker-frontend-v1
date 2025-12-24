@@ -1,5 +1,4 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { RootState } from '../index'
 
 interface User {
   uuid: string
@@ -7,7 +6,7 @@ interface User {
   name: string
 }
 
-interface AppState {
+export interface AppState {
   // Auth placeholder for future
   isAuthChecked: boolean
   isAuthenticated: boolean
@@ -53,12 +52,13 @@ export const appSlice = createSlice({
 
 export const { actions } = appSlice
 
+// Selectors - take the slice state directly, will be composed in index
 export const selectors = {
-  isAuthChecked: (state: RootState) => state.app.isAuthChecked,
-  isAuthenticated: (state: RootState) => state.app.isAuthenticated,
-  user: (state: RootState) => state.app.user,
-  isLoading: (state: RootState) => state.app.isLoading,
-  error: (state: RootState) => state.app.error,
+  isAuthChecked: (state: { app: AppState }) => state.app.isAuthChecked,
+  isAuthenticated: (state: { app: AppState }) => state.app.isAuthenticated,
+  user: (state: { app: AppState }) => state.app.user,
+  isLoading: (state: { app: AppState }) => state.app.isLoading,
+  error: (state: { app: AppState }) => state.app.error,
 }
 
 export default appSlice.reducer

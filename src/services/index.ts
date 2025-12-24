@@ -6,8 +6,4 @@ export { ApiError, NetworkError, ValidationError } from './api/errors'
 export * from './api/schemas'
 
 // Domain services
-export { datasetsService } from './datasets.service'
-export { projectsService } from './projects.service'
-export { tasksService } from './tasks.service'
-export { candidatesService } from './candidates.service'
-export { propertiesService } from './properties.service'
+export * from './domain'

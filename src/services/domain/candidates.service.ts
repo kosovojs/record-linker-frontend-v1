@@ -1,12 +1,12 @@
-import { httpClient } from './api/client'
-import { assertUuid } from './api/schemas/common'
+import { httpClient } from '../api/client'
+import { assertUuid } from '../api/schemas/common'
 import type {
   MatchCandidateRead,
   MatchCandidateCreate,
   MatchCandidateUpdate,
   BulkCandidateUpdateRequest,
   AcceptRejectResponse,
-} from './api/schemas'
+} from '../api/schemas'
 
 /**
  * Candidates API service

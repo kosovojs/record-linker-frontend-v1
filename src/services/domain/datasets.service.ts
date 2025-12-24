@@ -1,5 +1,5 @@
-import { httpClient } from './api/client'
-import { assertUuid } from './api/schemas/common'
+import { httpClient } from '../api/client'
+import { assertUuid } from '../api/schemas/common'
 import type {
   DatasetRead,
   DatasetCreate,
@@ -8,7 +8,7 @@ import type {
   DatasetEntryCreate,
   PaginatedResponse,
   ListParams,
-} from './api/schemas'
+} from '../api/schemas'
 
 /**
  * Datasets API service

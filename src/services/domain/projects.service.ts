@@ -1,5 +1,5 @@
-import { httpClient } from './api/client'
-import { assertUuid } from './api/schemas/common'
+import { httpClient } from '../api/client'
+import { assertUuid } from '../api/schemas/common'
 import type {
   ProjectRead,
   ProjectCreate,
@@ -9,7 +9,8 @@ import type {
   ProjectStatsResponse,
   ApprovedMatchesResponse,
   PaginatedResponse,
-} from './api/schemas'
+  QueryParams,
+} from '../api/schemas'
 
 interface ProjectListParams {
   [key: string]: string | number | boolean | undefined | null
@@ -83,7 +84,7 @@ export const projectsService = {
     assertUuid(uuid, 'project uuid')
     return httpClient.get<ApprovedMatchesResponse>(
       `/projects/${uuid}/approved-matches`,
-      { params: params as Record<string, string | number | boolean | undefined | null> }
+      { params: params as QueryParams }
     )
   },
 }
